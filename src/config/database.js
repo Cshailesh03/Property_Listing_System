@@ -24,7 +24,8 @@ const connectDB = async () => {
 const connectRedis = async () => {
   try {
     redisClient = redis.createClient({
-      url: process.env.REDIS_URL
+      url: process.env.REDIS_URL || 'rediss://default:AUmjAAIjcDE3MTJkMmEzZGJkYzM0Y2EzYjJlYzFjZTQ3Zjc0MjQzZHAxMA@robust-foxhound-18851.upstash.io:6379',
+      
     });
 
     redisClient.on('error', (err) => logger.error('Redis Client Error', err));
