@@ -9,7 +9,7 @@ const {
   validateMongoId 
 } = require('../middleware/validation');
 
-// Public routes (with optional auth for personalized results)
+
 router.get('/', optionalAuth, validatePagination, propertyController.getProperties);
 router.get('/search', optionalAuth, validatePagination, propertyController.searchProperties);
 router.get('/:id', optionalAuth, validateMongoId(), propertyController.getPropertyById);

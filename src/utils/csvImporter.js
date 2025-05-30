@@ -1,4 +1,5 @@
 const fs = require('fs');
+const path = require('path');
 const csv = require('csv-parser');
 const mongoose = require('mongoose');
 const Property = require('../models/Property');
@@ -129,7 +130,16 @@ class CSVImporter {
 
 // Run the importer if called directly
 if (require.main === module) {
-  const csvPath = process.argv[2] || './data/properties.csv';
+  // Updated path handling using path.join
+  const csvPath = path.join(__dirname, 'data', 'properties.csv');
+  
+  if (!fs.existsSync(csvPath)) {
+    console.error(`CSV file not found at path: ${csvPath}`);
+    console.error(`Current directory: ${__dirname}`);
+    console.error(`Looking for file at: ${path.resolve(csvPath)}`);
+    process.exit(1);
+  }
+  
   const importer = new CSVImporter();
   
   importer.importFromCSV(csvPath)

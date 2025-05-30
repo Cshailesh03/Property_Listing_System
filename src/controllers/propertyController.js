@@ -1,6 +1,6 @@
 const Property = require('../models/Property');
 const { getRedisClient } = require('../config/database');
-const { buildPropertyFilter } = require('../utils/filterBuilder');
+const { buildPropertyFilter , buildSortOptions} = require('../utils/filterBuilder');
 const { validationResult } = require('express-validator');
 const cacheService = require('../services/cacheService');
 
@@ -21,7 +21,6 @@ const createProperty = async (req, res, next) => {
 
     const property = await Property.create(propertyData);
 
-    // Clear cache for property list
     await cacheService.clearPattern('properties:*');
 
     res.status(201).json({
@@ -40,19 +39,15 @@ const getProperties = async (req, res, next) => {
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
-    // Build filter from query parameters
     const filter = buildPropertyFilter(req.query);
     
-    // Create cache key
     const cacheKey = `properties:${JSON.stringify({ filter, page, limit })}`;
     
-    // Check cache
     const cachedData = await cacheService.get(cacheKey);
     if (cachedData) {
       return res.json(cachedData);
     }
 
-    // Query database
     const [properties, total] = await Promise.all([
       Property.find(filter)
         .populate('createdBy', 'name email')
@@ -88,7 +83,6 @@ const getPropertyById = async (req, res, next) => {
   try {
     const { id } = req.params;
     
-    // Check cache
     const cacheKey = `property:${id}`;
     const cachedProperty = await cacheService.get(cacheKey);
     if (cachedProperty) {
@@ -202,28 +196,288 @@ const deleteProperty = async (req, res, next) => {
   }
 };
 
+//   try {
+//     const { 
+//       q, 
+//       sortBy = 'date_desc',
+//       page = 1,
+//       limit = 20,
+//       ...filters 
+//     } = req.query;
+    
+//     const pageNum = parseInt(page);
+//     const limitNum = parseInt(limit);
+//     const skip = (pageNum - 1) * limitNum;
+
+//     // Build the search query using your FilterBuilder
+//     let searchQuery = buildPropertyFilter(filters);
+    
+//     console.log(`Search Query: ${JSON.stringify(searchQuery)}`);
+    
+//     // Initialize the query
+//     let propertyQuery = Property.find(searchQuery);
+//     console.log(propertyQuery);;
+    
+//     let countQuery = Property.countDocuments(searchQuery);
+    
+//     // Handle text search if query string provided
+//     if (q && q.trim()) {
+//       // Add text search to the query
+//       searchQuery.$text = { $search: q };
+      
+//       // Update queries with text search
+//       propertyQuery = Property.find(searchQuery, { 
+//         score: { $meta: 'textScore' } 
+//       });
+//       countQuery = Property.countDocuments(searchQuery);
+      
+//       // For text search, prioritize text score in sorting
+//       if (sortBy === 'relevance' || !sortBy) {
+//         propertyQuery.sort({ score: { $meta: 'textScore' }, createdAt: -1 });
+//       } else {
+//         // Apply custom sort but include text score as secondary
+//         const customSort = buildSortOptions(sortBy);
+//         propertyQuery.sort({ ...customSort, score: { $meta: 'textScore' } });
+//       }
+//     } else {
+//       // No text search - use regular sorting
+//       const sortOptions = buildSortOptions(sortBy);
+//       propertyQuery.sort(sortOptions);
+//     }
+
+//     // Apply population, skip, and limit
+//     propertyQuery
+//       .populate('createdBy', 'name email')
+//       .skip(skip)
+//       .limit(limitNum);
+
+//     // Execute both queries in parallel
+//     const [properties, total] = await Promise.all([
+//       propertyQuery.lean(),
+//       countQuery
+//     ]);
+
+//     // Calculate pagination metadata
+//     const totalPages = Math.ceil(total / limitNum);
+//     const hasNextPage = pageNum < totalPages;
+//     const hasPrevPage = pageNum > 1;
+
+//     res.json({
+//       success: true,
+//       data: {
+//         properties,
+//         pagination: {
+//           total,
+//           page: pageNum,
+//           pages: totalPages,
+//           limit: limitNum,
+//           hasNextPage,
+//           hasPrevPage,
+//           nextPage: hasNextPage ? pageNum + 1 : null,
+//           prevPage: hasPrevPage ? pageNum - 1 : null
+//         },
+//         filters: {
+//           applied: Object.keys(filters).length > 0 ? filters : null,
+//           textSearch: q || null,
+//           sortBy
+//         }
+//       }
+//     });
+//   } catch (error) {
+//     next(error);
+//   }
+// };
+
+// const searchProperties = async (req, res, next) => {
+//   try {
+//     const { 
+//       q, 
+//       sortBy = 'date_desc',
+//       page = 1,
+//       limit = 20,
+//       ...filters 
+//     } = req.query;
+    
+//     const pageNum = parseInt(page);
+//     const limitNum = parseInt(limit);
+//     const skip = (pageNum - 1) * limitNum;
+
+//     // Clean filters by trimming whitespace
+//     const cleanedFilters = {};
+//     for (const [key, value] of Object.entries(filters)) {
+//       cleanedFilters[key] = typeof value === 'string' ? value.trim() : value;
+//     }
+
+//     // Build the search query using your FilterBuilder
+//     let searchQuery = buildPropertyFilter(cleanedFilters);
+    
+//     console.log(`Search Query: ${JSON.stringify(searchQuery, null, 2)}`);
+    
+//     // DEBUG: Test each filter individually to find the problematic one
+//     if (process.env.NODE_ENV === 'development') {
+//       console.log('\n=== DEBUGGING FILTERS ===');
+      
+//       // Test total properties first
+//       const totalProps = await Property.countDocuments({});
+//       console.log(`Total properties in database: ${totalProps}`);
+      
+//       // Test each filter condition individually
+//       const filterTests = {};
+//       for (const [key, value] of Object.entries(searchQuery)) {
+//         try {
+//           const count = await Property.countDocuments({ [key]: value });
+//           filterTests[key] = count;
+//           console.log(`Filter "${key}": ${JSON.stringify(value)} → ${count} matches`);
+//         } catch (error) {
+//           console.log(`Filter "${key}" error:`, error.message);
+//         }
+//       }
+      
+//       // Test progressive combination of filters
+//       let progressiveQuery = {};
+//       for (const [key, value] of Object.entries(searchQuery)) {
+//         progressiveQuery[key] = value;
+//         const count = await Property.countDocuments(progressiveQuery);
+//         console.log(`Progressive filter up to "${key}": ${count} matches`);
+//         if (count === 0) {
+//           console.log(`❌ Filter "${key}" caused 0 results!`);
+//           break;
+//         }
+//       }
+//       console.log('=== END DEBUGGING ===\n');
+//     }
+
+//     // Handle text search if query string provided
+//     if (q && q.trim()) {
+//       searchQuery.$text = { $search: q };
+//     }
+    
+//     // Build the query
+//     let propertyQuery = Property.find(
+//       searchQuery,
+//       q && q.trim() ? { score: { $meta: 'textScore' } } : {}
+//     );
+    
+//     // Apply sorting
+//     if (q && q.trim()) {
+//       if (sortBy === 'relevance' || !sortBy) {
+//         propertyQuery.sort({ score: { $meta: 'textScore' }, createdAt: -1 });
+//       } else {
+//         const customSort = buildSortOptions(sortBy);
+//         propertyQuery.sort({ ...customSort, score: { $meta: 'textScore' } });
+//       }
+//     } else {
+//       const sortOptions = buildSortOptions(sortBy);
+//       propertyQuery.sort(sortOptions);
+//     }
+
+//     // Apply population, skip, and limit
+//     propertyQuery
+//       .populate('createdBy', 'name email')
+//       .skip(skip)
+//       .limit(limitNum)
+//       .lean();
+
+//     // Execute both queries in parallel
+//     const [properties, total] = await Promise.all([
+//       propertyQuery,
+//       Property.countDocuments(searchQuery)
+//     ]);
+
+//     // Calculate pagination metadata
+//     const totalPages = Math.ceil(total / limitNum);
+//     const hasNextPage = pageNum < totalPages;
+//     const hasPrevPage = pageNum > 1;
+
+//     res.json({
+//       success: true,
+//       data: {
+//         properties,
+//         pagination: {
+//           total,
+//           page: pageNum,
+//           pages: totalPages,
+//           limit: limitNum,
+//           hasNextPage,
+//           hasPrevPage,
+//           nextPage: hasNextPage ? pageNum + 1 : null,
+//           prevPage: hasPrevPage ? pageNum - 1 : null
+//         },
+//         filters: {
+//           applied: Object.keys(filters).length > 0 ? cleanedFilters : null,
+//           textSearch: q || null,
+//           sortBy
+//         }
+//       }
+//     });
+//   } catch (error) {
+//     console.error('Search error:', error);
+//     next(error);
+//   }
+// };
 const searchProperties = async (req, res, next) => {
   try {
-    const { q, ...filters } = req.query;
-    const page = parseInt(filters.page) || 1;
-    const limit = parseInt(filters.limit) || 20;
-    const skip = (page - 1) * limit;
+    const { 
+      q, 
+      sortBy = 'date_desc',
+      page = 1,
+      limit = 20,
+      ...filters 
+    } = req.query;
+    
+    const pageNum = parseInt(page) || 1;
+    const limitNum = parseInt(limit) || 20;
+    const skip = (pageNum - 1) * limitNum;
 
-    let searchQuery = buildPropertyFilter(filters);
+ 
+    const cleanedFilters = {};
+    for (const [key, value] of Object.entries(filters)) {
+      if (value !== undefined && value !== null && value !== '') {
+        cleanedFilters[key] = typeof value === 'string' ? value.trim() : value;
+      }
+    }
 
-    // Add text search if query provided
-    if (q) {
+    let searchQuery = buildPropertyFilter(cleanedFilters);
+  
+    if (q && q.trim()) {
       searchQuery.$text = { $search: q };
     }
 
+    let propertyQuery = Property.find(
+      searchQuery,
+      q && q.trim() ? { score: { $meta: 'textScore' } } : {}
+    );
+    
+    // Apply sorting
+    if (q && q.trim()) {
+      if (sortBy === 'relevance' || !sortBy) {
+        propertyQuery.sort({ score: { $meta: 'textScore' }, createdAt: -1 });
+      } else {
+        const customSort = buildSortOptions(sortBy);
+        propertyQuery.sort({ ...customSort, score: { $meta: 'textScore' } });
+      }
+    } else {
+      const sortOptions = buildSortOptions(sortBy);
+      propertyQuery.sort(sortOptions);
+    }
+
+    propertyQuery
+      .populate('createdBy', 'name email')
+      .skip(skip)
+      .limit(limitNum)
+      .lean();
+
+    // Execute both queries in parallel
     const [properties, total] = await Promise.all([
-      Property.find(searchQuery)
-        .populate('createdBy', 'name email')
-        .sort({ score: { $meta: 'textScore' }, createdAt: -1 })
-        .skip(skip)
-        .limit(limit),
+      propertyQuery,
       Property.countDocuments(searchQuery)
     ]);
+
+    console.log(`Final result: ${properties.length} properties found, total: ${total}`);
+
+    const totalPages = Math.ceil(total / limitNum);
+    const hasNextPage = pageNum < totalPages;
+    const hasPrevPage = pageNum > 1;
 
     res.json({
       success: true,
@@ -231,13 +485,23 @@ const searchProperties = async (req, res, next) => {
         properties,
         pagination: {
           total,
-          page,
-          pages: Math.ceil(total / limit),
-          limit
+          page: pageNum,
+          pages: totalPages,
+          limit: limitNum,
+          hasNextPage,
+          hasPrevPage,
+          nextPage: hasNextPage ? pageNum + 1 : null,
+          prevPage: hasPrevPage ? pageNum - 1 : null
+        },
+        filters: {
+          applied: Object.keys(cleanedFilters).length > 0 ? cleanedFilters : null,
+          textSearch: q || null,
+          sortBy
         }
       }
     });
   } catch (error) {
+    console.error('Search error:', error);
     next(error);
   }
 };

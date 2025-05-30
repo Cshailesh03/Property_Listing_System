@@ -14,18 +14,23 @@ class FilterBuilder {
     }
 
     // Property type filter
-    if (queryParams.type) {
-      const types = Array.isArray(queryParams.type) ? queryParams.type : [queryParams.type];
+    if (queryParams.type && queryParams.type.trim()) {
+      const types = Array.isArray(queryParams.type) ? queryParams.type : [queryParams.type.trim()];
       filter.type = { $in: types };
     }
 
-    // Location filters
-    if (queryParams.state) {
-      filter.state = new RegExp(queryParams.state, 'i');
+    // Location filters - IMPROVED WITH VALIDATION
+    if (queryParams.state && queryParams.state.trim()) {
+      filter.state = new RegExp(queryParams.state.trim(), 'i');
     }
-    if (queryParams.city) {
-      filter.city = new RegExp(queryParams.city, 'i');
-    }
+    // In filterBuilder.js, replace the city filter section with:
+      if (queryParams.city) {
+        const cityValue = queryParams.city.trim();
+        console.log(`Building city filter for: "${cityValue}"`);
+        filter.city = new RegExp(cityValue, 'i');
+        console.log(`City filter created:`, filter.city);
+      }
+
 
     // Area filter
     if (queryParams.minArea || queryParams.maxArea) {
@@ -38,23 +43,34 @@ class FilterBuilder {
       }
     }
 
-    // Bedrooms filter
+    // Bedrooms filter - IMPROVED
     if (queryParams.bedrooms) {
-      if (queryParams.bedrooms.includes('+')) {
-        const minBedrooms = parseInt(queryParams.bedrooms.replace('+', ''));
+      const bedroomValue = queryParams.bedrooms.toString().trim();
+      if (bedroomValue.includes('+')) {
+        const minBedrooms = parseInt(bedroomValue.replace('+', ''));
         filter.bedrooms = { $gte: minBedrooms };
       } else {
-        filter.bedrooms = parseInt(queryParams.bedrooms);
+        const exactBedrooms = parseInt(bedroomValue);
+        if (!isNaN(exactBedrooms)) {
+          filter.bedrooms = exactBedrooms;
+        }
       }
     }
 
-    // Bathrooms filter
+    // Bathrooms filter - IMPROVED WITH FLEXIBLE MATCHING
     if (queryParams.bathrooms) {
-      if (queryParams.bathrooms.includes('+')) {
-        const minBathrooms = parseInt(queryParams.bathrooms.replace('+', ''));
+      const bathroomValue = queryParams.bathrooms.toString().trim();
+      if (bathroomValue.includes('+')) {
+        const minBathrooms = parseInt(bathroomValue.replace('+', ''));
         filter.bathrooms = { $gte: minBathrooms };
       } else {
-        filter.bathrooms = parseInt(queryParams.bathrooms);
+        const exactBathrooms = parseInt(bathroomValue);
+        if (!isNaN(exactBathrooms)) {
+          // For flexibility, you can make this a range or exact match
+          filter.bathrooms = exactBathrooms;
+          // OR for more flexible matching:
+          // filter.bathrooms = { $gte: Math.max(1, exactBathrooms) };
+        }
       }
     }
 
@@ -62,15 +78,15 @@ class FilterBuilder {
     if (queryParams.amenities) {
       const amenities = Array.isArray(queryParams.amenities) 
         ? queryParams.amenities 
-        : queryParams.amenities.split(',');
+        : queryParams.amenities.split(',').map(a => a.trim());
       filter.amenities = { $all: amenities };
     }
 
-    // Furnished status filter
-    if (queryParams.furnished) {
+    // Furnished status filter - IMPROVED
+    if (queryParams.furnished && queryParams.furnished.trim()) {
       const furnishedOptions = Array.isArray(queryParams.furnished) 
         ? queryParams.furnished 
-        : [queryParams.furnished];
+        : [queryParams.furnished.trim()];
       filter.furnished = { $in: furnishedOptions };
     }
 
@@ -80,10 +96,10 @@ class FilterBuilder {
     }
 
     // Listed by filter
-    if (queryParams.listedBy) {
+    if (queryParams.listedBy && queryParams.listedBy.trim()) {
       const listedByOptions = Array.isArray(queryParams.listedBy) 
         ? queryParams.listedBy 
-        : [queryParams.listedBy];
+        : [queryParams.listedBy.trim()];
       filter.listedBy = { $in: listedByOptions };
     }
 
@@ -91,7 +107,7 @@ class FilterBuilder {
     if (queryParams.tags) {
       const tags = Array.isArray(queryParams.tags) 
         ? queryParams.tags 
-        : queryParams.tags.split(',');
+        : queryParams.tags.split(',').map(t => t.trim());
       filter.tags = { $in: tags };
     }
 
@@ -100,14 +116,18 @@ class FilterBuilder {
       filter.rating = { $gte: parseFloat(queryParams.minRating) };
     }
 
-    // Verified properties only
-    if (queryParams.isVerified === 'true') {
-      filter.isVerified = true;
+    // Verified properties only - IMPROVED BOOLEAN HANDLING
+    if (queryParams.isVerified !== undefined) {
+      if (queryParams.isVerified === 'true' || queryParams.isVerified === true) {
+        filter.isVerified = true;
+      } else if (queryParams.isVerified === 'false' || queryParams.isVerified === false) {
+        filter.isVerified = false;
+      }
     }
 
-    // Listing type filter
-    if (queryParams.listingType) {
-      filter.listingType = queryParams.listingType;
+    // Listing type filter - IMPROVED
+    if (queryParams.listingType && queryParams.listingType.trim()) {
+      filter.listingType = queryParams.listingType.trim();
     }
 
     // Created by filter (for user's own properties)

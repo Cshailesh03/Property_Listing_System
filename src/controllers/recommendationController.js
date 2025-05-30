@@ -55,16 +55,18 @@ const recommendProperty = async (req, res, next) => {
 const getRecommendations = async (req, res, next) => {
   try {
     const userId = req.user.id;
+    // console.log(userId);
+    
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
     const skip = (page - 1) * limit;
 
     // Check cache
-    const cacheKey = `user:${userId}:recommendations:${page}:${limit}`;
-    const cachedData = await cacheService.get(cacheKey);
-    if (cachedData) {
-      return res.json(cachedData);
-    }
+    // const cacheKey = `user:${userId}:recommendations:${page}:${limit}`;
+    // const cachedData = await cacheService.get(cacheKey);
+    // if (cachedData) {
+    //   return res.json(cachedData);
+    // }
 
     const user = await User.findById(userId)
       .populate({
@@ -96,7 +98,7 @@ const getRecommendations = async (req, res, next) => {
     };
 
     // Cache the response
-    await cacheService.set(cacheKey, response, 3600);
+    // await cacheService.set(cacheKey, response, 3600);
 
     res.json(response);
   } catch (error) {
