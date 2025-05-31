@@ -13,7 +13,6 @@ const propertyRoutes = require('./src/routes/properties');
 const favoriteRoutes = require('./src/routes/favorites');
 const recommendationRoutes = require('./src/routes/recommendations');
 
-// Logger configuration
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.json(),
@@ -28,33 +27,27 @@ const logger = winston.createLogger({
 
 const app = express();
 
-// Security middleware
 app.use(helmet());
 app.use(cors());
 app.use(compression());
 
-// Rate limiting
 const limiter = rateLimit({
   windowMs: process.env.RATE_LIMIT_WINDOW_MS || 15 * 60 * 1000,
   max: process.env.RATE_LIMIT_MAX || 100
 });
 app.use('/api/', limiter);
 
-// Body parser middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Connect to databases
 connectDB();
 connectRedis();
 
-// Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/properties', propertyRoutes);
 app.use('/api/favorites', favoriteRoutes);
 app.use('/api/recommendations', recommendationRoutes);
 
-// Global error handler
 app.use((err, req, res, next) => {
   logger.error(err.stack);
   res.status(err.status || 500).json({
@@ -64,7 +57,6 @@ app.use((err, req, res, next) => {
   });
 });
 
-// 404 handler
 app.use((req, res) => {
   res.status(404).json({
     success: false,

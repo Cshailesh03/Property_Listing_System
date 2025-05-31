@@ -5,7 +5,6 @@ const { authenticate } = require('../middleware/auth');
 const { validatePagination, validateMongoId } = require('../middleware/validation');
 const { body } = require('express-validator');
 
-// All routes are protected
 router.use(authenticate);
 
 router.get('/', validatePagination, favoriteController.getFavorites);

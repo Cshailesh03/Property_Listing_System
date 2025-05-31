@@ -7,7 +7,6 @@ const addFavorite = async (req, res, next) => {
     const { propertyId } = req.body;
     const userId = req.user.id;
 
-    // Check if property exists
     const property = await Property.findById(propertyId);
     if (!property) {
       return res.status(404).json({
@@ -16,14 +15,12 @@ const addFavorite = async (req, res, next) => {
       });
     }
 
-    // Add to favorites
     const user = await User.findByIdAndUpdate(
       userId,
       { $addToSet: { favorites: propertyId } },
       { new: true }
     ).populate('favorites');
 
-    // Clear user cache
     await cacheService.clearPattern(`user:${userId}:favorites`);
 
     res.json({
@@ -41,14 +38,12 @@ const removeFavorite = async (req, res, next) => {
     const { propertyId } = req.params;
     const userId = req.user.id;
 
-    // Remove from favorites
     const user = await User.findByIdAndUpdate(
       userId,
       { $pull: { favorites: propertyId } },
       { new: true }
     ).populate('favorites');
 
-    // Clear user cache
     await cacheService.clearPattern(`user:${userId}:favorites`);
 
     res.json({
@@ -67,7 +62,6 @@ const getFavorites = async (req, res, next) => {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 20;
 
-    // Check cache
     const cacheKey = `user:${userId}:favorites:${page}:${limit}`;
     const cachedData = await cacheService.get(cacheKey);
     if (cachedData) {
@@ -96,7 +90,6 @@ const getFavorites = async (req, res, next) => {
       }
     };
 
-    // Cache the response
     await cacheService.set(cacheKey, response, 3600);
 
     res.json(response);

@@ -4,7 +4,6 @@ const recommendationController = require('../controllers/recommendationControlle
 const { authenticate } = require('../middleware/auth');
 const { validateRecommendation, validatePagination, validateMongoId } = require('../middleware/validation');
 
-// All routes are protected
 router.use(authenticate);
 
 router.post('/', validateRecommendation, recommendationController.recommendProperty);

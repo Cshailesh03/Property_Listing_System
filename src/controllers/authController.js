@@ -4,7 +4,6 @@ const { validationResult } = require('express-validator');
 
 const register = async (req, res, next) => {
   try {
-    // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -15,7 +14,6 @@ const register = async (req, res, next) => {
 
     const { email, password, name } = req.body;
 
-    // Check if user already exists
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(409).json({
@@ -24,14 +22,12 @@ const register = async (req, res, next) => {
       });
     }
 
-    // Create new user
     const user = await User.create({
       email,
       password,
       name
     });
 
-    // Generate token
     const token = generateToken({ 
       id: user._id, 
       email: user.email 
@@ -52,7 +48,6 @@ const register = async (req, res, next) => {
 
 const login = async (req, res, next) => {
   try {
-    // Check validation errors
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       return res.status(400).json({
@@ -63,7 +58,6 @@ const login = async (req, res, next) => {
 
     const { email, password } = req.body;
 
-    // Find user and include password field
     const user = await User.findOne({ email }).select('+password');
     if (!user) {
       return res.status(401).json({
@@ -72,7 +66,6 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Check password
     const isPasswordValid = await user.comparePassword(password);
     if (!isPasswordValid) {
       return res.status(401).json({
@@ -81,13 +74,11 @@ const login = async (req, res, next) => {
       });
     }
 
-    // Generate token
     const token = generateToken({ 
       id: user._id, 
       email: user.email 
     });
 
-    // Remove password from response
     user.password = undefined;
 
     res.json({

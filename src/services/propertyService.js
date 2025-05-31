@@ -8,7 +8,6 @@ class PropertyService {
       createdBy: userId
     });
 
-    // Clear cache
     await cacheService.clearPattern('properties:*');
     
     return property;
@@ -22,7 +21,6 @@ class PropertyService {
     );
 
     if (property) {
-      // Clear specific property cache and list cache
       await cacheService.del(`property:${propertyId}`);
       await cacheService.clearPattern('properties:*');
     }
@@ -37,7 +35,6 @@ class PropertyService {
     });
 
     if (property) {
-      // Clear cache
       await cacheService.del(`property:${propertyId}`);
       await cacheService.clearPattern('properties:*');
     }

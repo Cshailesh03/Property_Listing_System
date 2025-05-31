@@ -3,7 +3,6 @@ const User = require('../models/User');
 
 const authenticate = async (req, res, next) => {
   try {
-    // Get token from header
     const authHeader = req.headers.authorization;
     
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -15,10 +14,8 @@ const authenticate = async (req, res, next) => {
 
     const token = authHeader.substring(7);
 
-    // Verify token
     const decoded = verifyToken(token);
 
-    // Find user
     const user = await User.findById(decoded.id).select('-password');
     if (!user) {
       return res.status(401).json({
@@ -27,7 +24,6 @@ const authenticate = async (req, res, next) => {
       });
     }
 
-    // Attach user to request
     req.user = user;
     next();
   } catch (error) {
@@ -53,7 +49,6 @@ const optionalAuth = async (req, res, next) => {
     
     next();
   } catch (error) {
-    // Continue without authentication
     next();
   }
 };

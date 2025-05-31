@@ -98,7 +98,6 @@ class CSVImporter {
           console.log(`CSV file successfully processed. ${this.results.length} rows found.`);
           
           try {
-            // Bulk insert properties
             if (this.results.length > 0) {
               await Property.insertMany(this.results, { ordered: false });
               console.log(`Successfully imported ${this.results.length} properties`);
@@ -128,9 +127,7 @@ class CSVImporter {
   }
 }
 
-// Run the importer if called directly
 if (require.main === module) {
-  // Updated path handling using path.join
   const csvPath = path.join(__dirname, 'data', 'properties.csv');
   
   if (!fs.existsSync(csvPath)) {

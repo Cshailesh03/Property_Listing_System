@@ -96,7 +96,6 @@ const propertySchema = new mongoose.Schema({
   timestamps: true
 });
 
-// Indexes for better query performance
 propertySchema.index({ price: 1 });
 propertySchema.index({ city: 1, state: 1 });
 propertySchema.index({ type: 1 });

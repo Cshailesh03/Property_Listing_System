@@ -2,7 +2,6 @@ class FilterBuilder {
   static buildPropertyFilter(queryParams) {
     const filter = {};
 
-    // Price range filter
     if (queryParams.minPrice || queryParams.maxPrice) {
       filter.price = {};
       if (queryParams.minPrice) {
@@ -13,17 +12,14 @@ class FilterBuilder {
       }
     }
 
-    // Property type filter
     if (queryParams.type && queryParams.type.trim()) {
       const types = Array.isArray(queryParams.type) ? queryParams.type : [queryParams.type.trim()];
       filter.type = { $in: types };
     }
 
-    // Location filters - IMPROVED WITH VALIDATION
     if (queryParams.state && queryParams.state.trim()) {
       filter.state = new RegExp(queryParams.state.trim(), 'i');
     }
-    // In filterBuilder.js, replace the city filter section with:
       if (queryParams.city) {
         const cityValue = queryParams.city.trim();
         console.log(`Building city filter for: "${cityValue}"`);
@@ -32,7 +28,6 @@ class FilterBuilder {
       }
 
 
-    // Area filter
     if (queryParams.minArea || queryParams.maxArea) {
       filter.areaSqFt = {};
       if (queryParams.minArea) {
@@ -43,7 +38,6 @@ class FilterBuilder {
       }
     }
 
-    // Bedrooms filter - IMPROVED
     if (queryParams.bedrooms) {
       const bedroomValue = queryParams.bedrooms.toString().trim();
       if (bedroomValue.includes('+')) {
@@ -57,7 +51,6 @@ class FilterBuilder {
       }
     }
 
-    // Bathrooms filter - IMPROVED WITH FLEXIBLE MATCHING
     if (queryParams.bathrooms) {
       const bathroomValue = queryParams.bathrooms.toString().trim();
       if (bathroomValue.includes('+')) {
@@ -66,15 +59,11 @@ class FilterBuilder {
       } else {
         const exactBathrooms = parseInt(bathroomValue);
         if (!isNaN(exactBathrooms)) {
-          // For flexibility, you can make this a range or exact match
           filter.bathrooms = exactBathrooms;
-          // OR for more flexible matching:
-          // filter.bathrooms = { $gte: Math.max(1, exactBathrooms) };
         }
       }
     }
 
-    // Amenities filter
     if (queryParams.amenities) {
       const amenities = Array.isArray(queryParams.amenities) 
         ? queryParams.amenities 
@@ -82,7 +71,6 @@ class FilterBuilder {
       filter.amenities = { $all: amenities };
     }
 
-    // Furnished status filter - IMPROVED
     if (queryParams.furnished && queryParams.furnished.trim()) {
       const furnishedOptions = Array.isArray(queryParams.furnished) 
         ? queryParams.furnished 
@@ -90,12 +78,10 @@ class FilterBuilder {
       filter.furnished = { $in: furnishedOptions };
     }
 
-    // Available from filter
     if (queryParams.availableFrom) {
       filter.availableFrom = { $lte: new Date(queryParams.availableFrom) };
     }
 
-    // Listed by filter
     if (queryParams.listedBy && queryParams.listedBy.trim()) {
       const listedByOptions = Array.isArray(queryParams.listedBy) 
         ? queryParams.listedBy 
@@ -103,7 +89,6 @@ class FilterBuilder {
       filter.listedBy = { $in: listedByOptions };
     }
 
-    // Tags filter
     if (queryParams.tags) {
       const tags = Array.isArray(queryParams.tags) 
         ? queryParams.tags 
@@ -111,12 +96,10 @@ class FilterBuilder {
       filter.tags = { $in: tags };
     }
 
-    // Rating filter
     if (queryParams.minRating) {
       filter.rating = { $gte: parseFloat(queryParams.minRating) };
     }
 
-    // Verified properties only - IMPROVED BOOLEAN HANDLING
     if (queryParams.isVerified !== undefined) {
       if (queryParams.isVerified === 'true' || queryParams.isVerified === true) {
         filter.isVerified = true;
@@ -125,17 +108,14 @@ class FilterBuilder {
       }
     }
 
-    // Listing type filter - IMPROVED
     if (queryParams.listingType && queryParams.listingType.trim()) {
       filter.listingType = queryParams.listingType.trim();
     }
 
-    // Created by filter (for user's own properties)
     if (queryParams.createdBy) {
       filter.createdBy = queryParams.createdBy;
     }
 
-    // Date range filters
     if (queryParams.createdAfter || queryParams.createdBefore) {
       filter.createdAt = {};
       if (queryParams.createdAfter) {
@@ -175,7 +155,7 @@ class FilterBuilder {
         sortOptions.createdAt = 1;
         break;
       default:
-        sortOptions.createdAt = -1; // Default to newest first
+        sortOptions.createdAt = -1; 
     }
 
     return sortOptions;

@@ -1,6 +1,5 @@
 const { body, query, param, validationResult } = require('express-validator');
 
-// Auth validations
 const validateRegister = [
   body('email')
     .isEmail()
@@ -26,7 +25,6 @@ const validateLogin = [
     .withMessage('Password is required')
 ];
 
-// Property validations
 const validateCreateProperty = [
   body('propertyId').notEmpty().withMessage('Property ID is required'),
   body('title').notEmpty().trim().withMessage('Title is required'),
@@ -55,20 +53,17 @@ const validateUpdateProperty = [
   body('rating').optional().isFloat({ min: 0, max: 5 }).withMessage('Rating must be between 0 and 5')
 ];
 
-// Recommendation validations
 const validateRecommendation = [
   body('propertyId').isMongoId().withMessage('Invalid property ID'),
   body('recipientEmail').isEmail().normalizeEmail().withMessage('Please provide a valid recipient email'),
   body('message').optional().trim().isLength({ max: 500 }).withMessage('Message must not exceed 500 characters')
 ];
 
-// Pagination validations
 const validatePagination = [
   query('page').optional().isInt({ min: 1 }).withMessage('Page must be a positive integer'),
   query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100')
 ];
 
-// MongoDB ID validation
 const validateMongoId = (paramName = 'id') => [
   param(paramName).isMongoId().withMessage('Invalid ID format')
 ];
